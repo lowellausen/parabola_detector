@@ -26,14 +26,14 @@ ekernel_size = (3, 3)
 #converte imagem bgr pra grey scale
 grey_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-hist = [0 for i in range(255)]
+'''hist = [0 for i in range(255)]
 avg = 0
 for i in range(size[0]):
     for j in range(size[1]):
         hist[grey_img[j, i]] += 1
         avg += grey_img[j, i]
 
-avg /= size[0]*size[1]
+avg /= size[0]*size[1]'''
 
 for i in range(size[0]):
     for j in range(size[1]):
@@ -82,7 +82,22 @@ for line in lines:
         cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 3)
         cv2.line(grey_img, (ori_x1, ori_y1), (ori_x2, ori_y2), (0, 0, 0), 40)
 
+
 parab = [(j, i) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
+
+a_size = (len(parab), 3)
+b_size = (len(parab), 1)
+x_size = (3, 1)
+
+a_matrix = np.zeros(a_size)
+b_matrix = np.zeros(b_size)
+x_matrix = np.zeros(x_size)
+
+for i in range(a_size[0]):
+    a_matrix[i, 0] = parab[i][1] ** 2
+    a_matrix[i, 1] = parab[i][1]
+    a_matrix[i, 2] = 1
+
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
