@@ -98,6 +98,12 @@ for i in range(a_size[0]):
     a_matrix[i, 1] = parab[i][1]
     a_matrix[i, 2] = 1
 
+for i in range(b_size[0]):
+    b_matrix[i] = parab[i][0]
+
+ata = np.matmul(np.transpose(a_matrix), a_matrix)
+atb = np.matmul(np.transpose(a_matrix), b_matrix)
+
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
