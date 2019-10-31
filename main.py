@@ -104,6 +104,10 @@ for i in range(b_size[0]):
 ata = np.matmul(np.transpose(a_matrix), a_matrix)
 atb = np.matmul(np.transpose(a_matrix), b_matrix)
 
+sol = np.linalg.solve(ata, atb)
+
+print(parab[2000])
+print((parab[2000][1]**2)*sol[0] + parab[2000][1]*sol[1] + sol[2])
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
