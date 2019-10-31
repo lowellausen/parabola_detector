@@ -15,6 +15,11 @@ def draw_square_at(pos):
     global img
     img[int(pos[1]) - 3:int(pos[1]) + 3, int(pos[0]) - 3:int(pos[0]) + 3] = [255, 0, 0]
 
+
+def parab_x(x, s):
+    return(x ** 2) * s[0] + x * s[1] + s[2]
+
+
 # carregamos a imagem, dimensionamos uma janela para exibí-la
 img = cv2.imread('exemplo1.jpg')
 size = (img.shape[1], img.shape[0])
@@ -84,6 +89,25 @@ for line in lines:
 
 
 parab = [(j, i) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
+thin_parab = []
+prev_x = parab[0][1]
+pysum = 0
+pycount = 0
+for p in parab:
+    if p[1] == prev_x:
+        pysum += p[0]
+        pycount += 1
+    else:
+        pymean = pysum // pycount
+        thin_parab.append((pymean, prev_x))
+        prev_x = p[1]
+        pysum = p[0]
+        pycount = 1
+
+parab = thin_parab
+
+for p in parab:
+    grey_img[p] = 150
 
 a_size = (len(parab), 3)
 b_size = (len(parab), 1)
@@ -106,8 +130,14 @@ atb = np.matmul(np.transpose(a_matrix), b_matrix)
 
 sol = np.linalg.solve(ata, atb)
 
-print(parab[2000])
-print((parab[2000][1]**2)*sol[0] + parab[2000][1]*sol[1] + sol[2])
+print(parab[0])
+print((parab[0][1]**2)*sol[0] + parab[0][1]*sol[1] + sol[2])
+
+minparab = min(parab, key=lambda t: t[1])[1]
+maxparab = max(parab, key=lambda t: t[1])[1]
+
+for i in range(minparab, maxparab):
+    draw_square_at((i, parab_x(i, sol)))
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
