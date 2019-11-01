@@ -76,9 +76,19 @@ for i in range(size[0]):
         else:
             grey_img[j, i] = 0
 
+cv2.namedWindow('sdsds image', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('sdsds image', size[0], size[1])
+cv2.imshow('sdsds image', grey_img)
+
+
 #tentar fazer uma erosão
 kernel = np.ones(ekernel_size, np.uint8)
 grey_img = cv2.erode(grey_img, kernel, iterations=1)
+
+cv2.namedWindow('sdsds a', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('sdsds a', size[0], size[1])
+cv2.imshow('sdsds a', grey_img)
+
 
 
 #  hough aqui
@@ -89,10 +99,14 @@ for line in lines:
 
 lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
 
+for line in lines:
+    x1, x2 = find_endpoints(line[0])
+    cv2.line(img, x1, x2, (0, 255, 255), 3)
+
+lines = sorted(lines, key=lambda t: t[0][1])
 
 x1, x2 = find_endpoints(lines[0][0])
-x3, x4 = find_endpoints(lines[1][0])
-
+x3, x4 = find_endpoints(lines[-1][0])
 sub = np.subtract(x2, x1)
 
 v1 = sub/np.linalg.norm(sub)
@@ -104,10 +118,11 @@ new_x3 = tuple([int(i) for i in new_x3])
 new_x4 = np.add(inter, [v1[1]* 10000, v1[0]* 10000])
 new_x4 = tuple([int(i) for i in new_x4])
 
+
 cv2.line(img, x1, x2, (0, 0, 255), 3)
 cv2.line(img, new_x3, new_x4, (0, 0, 255), 3)
-cv2.line(grey_img, x1, x2, (0, 0, 0), 40)
-cv2.line(grey_img, x3, x4, (0, 0, 0), 40)
+cv2.line(grey_img, x1, x2, (0, 0, 0), 10)
+cv2.line(grey_img, x3, x4, (0, 0, 0), 10)
 
 draw_square_at(inter, [255, 0, 0])
 draw_square_at(x3, [255, 255, 0])
