@@ -11,9 +11,9 @@ import numpy as np  # biblioteca numpy para funções matemáticas, como a SDV
 import os
 
 
-def draw_square_at(pos):
+def draw_square_at(pos, color):
     global img
-    img[int(pos[1]) - 3:int(pos[1]) + 3, int(pos[0]) - 3:int(pos[0]) + 3] = [255, 0, 0]
+    img[int(pos[1]) - 3:int(pos[1]) + 3, int(pos[0]) - 3:int(pos[0]) + 3] = color
 
 
 def parab_x(x, s):
@@ -29,7 +29,7 @@ def intersec(p1, p2, p3, p4):
     numy = (p1[x]*p2[y] - p1[y]*p2[x])*(p3[y] - p4[y]) - (p1[y] - p2[y])*(p3[x]*p4[y] - p3[y]*p4[x])
     deny = (p1[x] - p2[x])*(p3[y] - p4[y]) - (p1[y] - p2[y])*(p3[x] - p4[x])
 
-    return (numx/denx), (numy/deny)
+    return [(numx/denx), (numy/deny)]
 
 
 def find_endpoints(t):
@@ -93,13 +93,25 @@ lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
 x1, x2 = find_endpoints(lines[0][0])
 x3, x4 = find_endpoints(lines[1][0])
 
+sub = np.subtract(x2, x1)
+
+v1 = sub/np.linalg.norm(sub)
+
+inter = intersec(x1, x2, x3, x4)
+
+new_x3 = np.add(inter, [v1[1]*-10000, v1[0]*-10000])
+new_x3 = tuple([int(i) for i in new_x3])
+new_x4 = np.add(inter, [v1[1]* 10000, v1[0]* 10000])
+new_x4 = tuple([int(i) for i in new_x4])
 
 cv2.line(img, x1, x2, (0, 0, 255), 3)
-cv2.line(img, x3, x4, (0, 0, 255), 3)
-#cv2.line(grey_img, (ori_x1, ori_y1), (ori_x2, ori_y2), 0, 40)
+cv2.line(img, new_x3, new_x4, (0, 0, 255), 3)
+cv2.line(grey_img, x1, x2, (0, 0, 0), 40)
+cv2.line(grey_img, x3, x4, (0, 0, 0), 40)
 
-ix, iy = intersec(x1, x2, x3, x4)
-draw_square_at((ix, iy))
+draw_square_at(inter, [255, 0, 0])
+draw_square_at(x3, [255, 255, 0])
+draw_square_at(x4, [255, 255, 255])
 
 
 parab = [(j, i) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
@@ -154,7 +166,7 @@ for i in range(0, size[0]):
     res = parab_x(i, sol)
     if res < 0:
         continue
-    #draw_square_at((i, res))
+    draw_square_at((i, res), [0, 255, 0])
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
