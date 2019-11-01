@@ -20,6 +20,35 @@ def parab_x(x, s):
     return(x ** 2) * s[0] + x * s[1] + s[2]
 
 
+def intersec(p1, p2, p3, p4):
+    x = 0
+    y = 1
+    numx = (p1[x]*p2[y] - p1[y]*p2[x])*(p3[x] - p4[x]) - (p1[x] - p2[x])*(p3[x]*p4[y] - p3[y]*p4[x])
+    denx = (p1[x] - p2[x])*(p3[y] - p4[y]) - (p1[y] - p2[y])*(p3[x] - p4[x])
+
+    numy = (p1[x]*p2[y] - p1[y]*p2[x])*(p3[y] - p4[y]) - (p1[y] - p2[y])*(p3[x]*p4[y] - p3[y]*p4[x])
+    deny = (p1[x] - p2[x])*(p3[y] - p4[y]) - (p1[y] - p2[y])*(p3[x] - p4[x])
+
+    return (numx/denx), (numy/deny)
+
+
+def find_endpoints(t):
+    rho = t[0]
+    theta = t[1]
+    print(np.degrees(theta), theta)
+    a = np.cos(theta)
+    b = np.sin(theta)
+    x0 = a * rho
+    y0 = b * rho
+    x1 = int(x0 + 10000 * (-b))
+    y1 = int(y0 + 10000 * a)
+    x2 = int(x0 - 10000 * (-b))
+    y2 = int(y0 - 10000 * a)
+    t1 = theta
+
+    return (x1, y1), (x2, y2)
+
+
 # carregamos a imagem, dimensionamos uma janela para exibí-la
 img = cv2.imread('exemplo1.jpg')
 size = (img.shape[1], img.shape[0])
@@ -59,33 +88,18 @@ for line in lines:
     cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 3)'''
 
 lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
-t1 = 0
-for line in lines:
-    for rho, theta in line:
-        ori_sin = np.sin(theta)
-        ori_cos = np.cos(theta)
-        ori_rho = rho
-        if t1 != 0:
-            theta = t1 - np.pi/2
-        a = np.cos(theta)
-        b = np.sin(theta)
-        rho = rho - (b*rho - ori_sin*rho)
-        ori_x0 = ori_cos * rho
-        ori_y0 = ori_sin * rho
-        ori_x1 = int(ori_x0 + 10000 * (-ori_sin))
-        ori_y1 = int(ori_y0 + 10000 * ori_cos)
-        ori_x2 = int(ori_x0 - 10000 * (-ori_sin))
-        ori_y2 = int(ori_y0 - 10000 * ori_cos)
-        x0 = a*rho
-        y0 = b*rho
-        x1 = int(x0 + 10000 * (-b))
-        y1 = int(y0 + 10000 * a)
-        x2 = int(x0 - 10000 * (-b))
-        y2 = int(y0 - 10000 * a)
-        t1 = theta
 
-        cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 3)
-        cv2.line(grey_img, (ori_x1, ori_y1), (ori_x2, ori_y2), (0, 0, 0), 40)
+
+x1, x2 = find_endpoints(lines[0][0])
+x3, x4 = find_endpoints(lines[1][0])
+
+
+cv2.line(img, x1, x2, (0, 0, 255), 3)
+cv2.line(img, x3, x4, (0, 0, 255), 3)
+#cv2.line(grey_img, (ori_x1, ori_y1), (ori_x2, ori_y2), 0, 40)
+
+ix, iy = intersec(x1, x2, x3, x4)
+draw_square_at((ix, iy))
 
 
 parab = [(j, i) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
@@ -107,7 +121,7 @@ for p in parab:
 parab = thin_parab
 
 for p in parab:
-    grey_img[p] = 150
+    grey_img[p] = 0
 
 a_size = (len(parab), 3)
 b_size = (len(parab), 1)
@@ -136,8 +150,11 @@ print((parab[0][1]**2)*sol[0] + parab[0][1]*sol[1] + sol[2])
 minparab = min(parab, key=lambda t: t[1])[1]
 maxparab = max(parab, key=lambda t: t[1])[1]
 
-for i in range(minparab, maxparab):
-    draw_square_at((i, parab_x(i, sol)))
+for i in range(0, size[0]):
+    res = parab_x(i, sol)
+    if res < 0:
+        continue
+    #draw_square_at((i, res))
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
