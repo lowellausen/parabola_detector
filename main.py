@@ -49,6 +49,41 @@ def find_endpoints(t):
     return (x1, y1), (x2, y2)
 
 
+def rotate(parab, theta):
+    minparaby = min(parab, key=lambda t: t[1])[1]
+    maxparaby = max(parab, key=lambda t: t[1])[1]
+    minparabx = min(parab, key=lambda t: t[0])[0]
+    maxparabx = max(parab, key=lambda t: t[0])[0]
+
+    center_parab = ((minparabx + maxparabx) / 2, (minparaby + maxparaby) / 2)
+
+    shifted_parab = []
+    for p in parab:
+        shiftp = (p[0] - center_parab[0], p[1] - center_parab[1])
+        shifted_parab.append(shiftp)
+    parab = shifted_parab
+
+    rot_matrix = np.array(([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta), np.cos(theta)]
+    ]))
+
+    rotated_parab = []
+    for p in parab:
+        rot_par = np.matmul(rot_matrix, p)
+        rotated_parab.append(rot_par)
+
+    parab = rotated_parab
+
+    shifted_parab = []
+    for p in parab:
+        shiftp = (p[0] + center_parab[0], p[1] + center_parab[1])
+        shifted_parab.append(shiftp)
+    parab = shifted_parab
+
+    return parab
+
+
 # carregamos a imagem, dimensionamos uma janela para exibí-la
 img = cv2.imread('exemplo1.jpg')
 size = (img.shape[1], img.shape[0])
@@ -105,32 +140,58 @@ for line in lines:
 
 lines = sorted(lines, key=lambda t: t[0][1])
 
-x1, x2 = find_endpoints(lines[0][0])
-x3, x4 = find_endpoints(lines[-1][0])
+x1, x2 = find_endpoints(lines[-1][0])
+x3, x4 = find_endpoints(lines[0][0])
+
+t1 = lines[-1][0][1]
+t2 = lines[0][0][1]
+
+theta_diff = np.abs(t2 - np.pi/2)
+print('Teta diffffff: ', np.degrees(theta_diff))
+
 sub = np.subtract(x2, x1)
 
 v1 = sub/np.linalg.norm(sub)
 
 inter = intersec(x1, x2, x3, x4)
 
-new_x3 = np.add(inter, [v1[1]*-10000, v1[0]*-10000])
+v2 = [v1[1], -v1[0]]
+
+print("NORMA DO V2 AQUI OIE", np.linalg.norm(v2))
+
+
+new_x3 = np.add(inter, [v2[0]*-10000, v2[1]*-10000])
 new_x3 = tuple([int(i) for i in new_x3])
-new_x4 = np.add(inter, [v1[1]* 10000, v1[0]* 10000])
+new_x4 = np.add(inter, [v2[0]* 10000, v2[1]* 10000])
 new_x4 = tuple([int(i) for i in new_x4])
 
 
 cv2.line(img, x1, x2, (0, 0, 255), 3)
-cv2.line(img, new_x3, new_x4, (0, 0, 255), 3)
-cv2.line(grey_img, x1, x2, (0, 0, 0), 10)
-cv2.line(grey_img, x3, x4, (0, 0, 0), 10)
+cv2.line(img, new_x3, new_x4, (255, 0, 255), 3)
+cv2.line(grey_img, x1, x2, (0, 0, 0), 40)
+cv2.line(grey_img, x3, x4, (0, 0, 0), 40)
 
 draw_square_at(inter, [255, 0, 0])
-draw_square_at(x3, [255, 255, 0])
-draw_square_at(x4, [255, 255, 255])
 
 
-parab = [(j, i) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
-thin_parab = []
+parab = [np.array((i, j)) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
+
+parab = rotate(parab, theta_diff)
+
+'''projected_parab =[]
+matriz_braba = np.array(([v2[1], v1[1]],
+                          [v2[0], v1[0]
+                          ]))
+matriz_braba_inv = np.linalg.inv(matriz_braba)
+for p in parab:
+    projected_point = np.matmul(matriz_braba_inv, np.array([p[1], p[0]]))
+    projected_parab.append((int(projected_point[1]), int(projected_point[0])))
+
+parab = projected_parab'''
+
+
+
+'''thin_parab = []
 prev_x = parab[0][1]
 pysum = 0
 pycount = 0
@@ -145,10 +206,10 @@ for p in parab:
         pysum = p[0]
         pycount = 1
 
-parab = thin_parab
+parab = thin_parab'''
 
-for p in parab:
-    grey_img[p] = 0
+#for p in parab:
+#    draw_square_at(p, [255, 0, 255])
 
 a_size = (len(parab), 3)
 b_size = (len(parab), 1)
@@ -159,12 +220,12 @@ b_matrix = np.zeros(b_size)
 x_matrix = np.zeros(x_size)
 
 for i in range(a_size[0]):
-    a_matrix[i, 0] = parab[i][1] ** 2
-    a_matrix[i, 1] = parab[i][1]
+    a_matrix[i, 0] = parab[i][0] ** 2
+    a_matrix[i, 1] = parab[i][0]
     a_matrix[i, 2] = 1
 
 for i in range(b_size[0]):
-    b_matrix[i] = parab[i][0]
+    b_matrix[i] = parab[i][1]
 
 ata = np.matmul(np.transpose(a_matrix), a_matrix)
 atb = np.matmul(np.transpose(a_matrix), b_matrix)
@@ -172,16 +233,26 @@ atb = np.matmul(np.transpose(a_matrix), b_matrix)
 sol = np.linalg.solve(ata, atb)
 
 print(parab[0])
-print((parab[0][1]**2)*sol[0] + parab[0][1]*sol[1] + sol[2])
+print((parab[0][0]**2)*sol[0] + parab[0][0]*sol[1] + sol[2])
 
-minparab = min(parab, key=lambda t: t[1])[1]
-maxparab = max(parab, key=lambda t: t[1])[1]
-
+stip_parab = []
 for i in range(0, size[0]):
     res = parab_x(i, sol)
     if res < 0:
         continue
-    draw_square_at((i, res), [0, 255, 0])
+    stip_parab.append((i, res))
+
+parab = rotate(stip_parab, -theta_diff)
+
+for p in parab:
+    draw_square_at(p, [0, 255, 0])
+
+'''for i in range(minparab, maxparab):
+    res = parab_x(i, sol)
+    res_screen = np.matmul(matriz_braba, np.array([res, i]))
+    if res_screen[1] < 0:
+        continue
+    draw_square_at(res_screen, [0, 255, 0])'''
 
 # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
 cv2.namedWindow('image', cv2.WINDOW_NORMAL)
