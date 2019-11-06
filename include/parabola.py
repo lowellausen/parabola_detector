@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 
 def draw_square_at(img, pos, color):
@@ -17,7 +18,8 @@ class Parabola:
 
         self.rotate(angle)
         self.thin()
-        self.equation = self.stipulate_equation()
+        #self.equation = self.ransac()
+        self.equation = self.stipulate_equation(self.points)
         self.points = self.stipulate_parabola()
         self.rotate(-angle)
 
@@ -39,20 +41,26 @@ class Parabola:
 
         return stip_parab
 
-    def stipulate_equation(self):
-        a_size = (len(self.points), 3)
-        b_size = (len(self.points), 1)
+    def ransac(self):
+        maybe_ins = random.choices(self.points, k=3)
+        maybe_parab = self.stipulate_equation(maybe_ins)
+
+        return maybe_parab
+
+    def stipulate_equation(self, points):
+        a_size = (len(points), 3)
+        b_size = (len(points), 1)
 
         a_matrix = np.zeros(a_size)
         b_matrix = np.zeros(b_size)
 
         for i in range(a_size[0]):
-            a_matrix[i, 0] = self.points[i][0] ** 2
-            a_matrix[i, 1] = self.points[i][0]
+            a_matrix[i, 0] = points[i][0] ** 2
+            a_matrix[i, 1] = points[i][0]
             a_matrix[i, 2] = 1
 
         for i in range(b_size[0]):
-            b_matrix[i] = self.points[i][1]
+            b_matrix[i] = points[i][1]
 
         ata = np.matmul(np.transpose(a_matrix), a_matrix)
         atb = np.matmul(np.transpose(a_matrix), b_matrix)

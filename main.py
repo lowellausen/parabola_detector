@@ -9,11 +9,64 @@
 import cv2   # biblioteca opencv utilizada para funções de imagem
 import numpy as np  # biblioteca numpy para funções matemáticas, como a SDV
 from include.parabola import Parabola
-import os
+import random
 
 
 def draw_square_at(img, pos, color):
     img[int(pos[1]) - 3:int(pos[1]) + 3, int(pos[0]) - 3:int(pos[0]) + 3] = color
+
+
+def color_dist(v1, v2):
+    return (v1 - v2)**2
+
+
+def kmeans(img):
+    c1, c2 = 0, 255
+    prev_c1 = prev_c2 = -7
+    g1 = []
+    g2 = []
+    g3 = []
+    c3 = 150
+    while c1 != prev_c1 and c2 != prev_c2:
+        g1 = []
+        sum1 = 0
+        count1 = 0
+        g2 = []
+        g3 = []
+        sum2 = 0
+        count2 = 0
+        sum3 = 0
+        count3 = 0
+
+        for i in range(img.shape[0]):
+            for j in range(img.shape[1]):
+                val = img[i, j]
+                dists = [color_dist(val, c) for c in [c1, c2, c3]]
+                if dists[0] < dists[1] and dists[0] < dists[2]:
+                    g1.append((i, j))
+                    sum1 += val
+                    count1 += 1
+                elif dists[1] < dists[0] and dists[1] < dists[2]:
+                    g2.append((i, j))
+                    sum2 += val
+                    count2 += 1
+                else:
+                    g3.append((i, j))
+                    sum3 += val
+                    count3 += 1
+
+        prev_c1 = c1
+        prev_c2 = c2
+        c1 = sum1 / count1
+        c2 = sum2 / count2
+        c3 = sum3 / count3
+
+        print(c1, c2)
+
+    if c1 < c2:
+        return g1, g2, g3
+    else:
+        return g2, g1, g3
 
 
 def intersec(p1, p2, p3, p4):
@@ -45,17 +98,29 @@ def find_endpoints(t):
     return (x1, y1), (x2, y2)
 
 
-def main():
+def main(threshold, nvotes):
     # carregamos a imagem, dimensionamos uma janela para exibí-la
     img = cv2.imread('exemplo1 - Copy.jpg')
     size = (img.shape[1], img.shape[0])
 
-    nvotes = 350
-    threshold = 120
     ekernel_size = (3, 3)
 
     #converte imagem bgr pra grey scale
     grey_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    grey_imgk = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    b, p, r = kmeans(grey_img)
+
+    for p in p:
+        grey_imgk[p] = 0
+    for p in r:
+        grey_imgk[p] = 0
+    for p in b:
+        grey_imgk[p] = 255
+
+    cv2.namedWindow('k means', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('k means', size[0], size[1])
+    cv2.imshow('k means', grey_imgk)
 
     '''hist = [0 for i in range(255)]
     avg = 0
@@ -73,28 +138,14 @@ def main():
             else:
                 grey_img[j, i] = 0
 
-    cv2.namedWindow('sdsds image', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('sdsds image', size[0], size[1])
-    cv2.imshow('sdsds image', grey_img)
 
-
-    #tentar fazer uma erosão
-    kernel = np.ones(ekernel_size, np.uint8)
-    grey_img = cv2.erode(grey_img, kernel, iterations=1)
-
-    cv2.namedWindow('sdsds a', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('sdsds a', size[0], size[1])
-    cv2.imshow('sdsds a', grey_img)
-
-
-
-    #  hough aqui
-    '''lines = cv2.HoughLinesP(grey_img, 1, np.pi/180, 200)
-    for line in lines:
-        x1, y1, x2, y2 = line[0]
-        cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 3)'''
+    cv2.namedWindow('thresholding', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('thresholding', size[0], size[1])
+    cv2.imshow('thresholding', grey_img)
 
     lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
+
+    return
 
     for line in lines:
         x1, x2 = find_endpoints(line[0])
@@ -109,7 +160,6 @@ def main():
     t2 = lines[0][0][1]
 
     theta_diff = np.abs(t2 - np.pi/2)
-    print('Teta diffffff: ', np.degrees(theta_diff))
 
     sub = np.subtract(x2, x1)
 
@@ -119,53 +169,26 @@ def main():
 
     v2 = [v1[1], -v1[0]]
 
-    print("NORMA DO V2 AQUI OIE", np.linalg.norm(v2))
-
-
     new_x3 = np.add(inter, [v2[0]*-10000, v2[1]*-10000])
     new_x3 = tuple([int(i) for i in new_x3])
     new_x4 = np.add(inter, [v2[0]* 10000, v2[1]* 10000])
     new_x4 = tuple([int(i) for i in new_x4])
 
-
     cv2.line(img, x1, x2, (0, 0, 255), 3)
     cv2.line(img, new_x3, new_x4, (255, 0, 255), 3)
-    cv2.line(grey_img, x1, x2, (0, 0, 0), 40)
-    cv2.line(grey_img, x3, x4, (0, 0, 0), 40)
+    cv2.line(grey_img, x1, x2, (0, 0, 0), 50)
+    cv2.line(grey_img, x3, x4, (0, 0, 0), 50)
 
     draw_square_at(img, inter, [255, 0, 0])
 
+    # tentar fazer uma erosão
+    kernel = np.ones(ekernel_size, np.uint8)
+    grey_img = cv2.erode(grey_img, kernel, iterations=1)
 
     points = [np.array((i, j)) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
     parab = Parabola(points, theta_diff)
 
     parab.draw(img)
-
-
-
-    '''projected_parab =[]
-    matriz_braba = np.array(([v2[1], v1[1]],
-                              [v2[0], v1[0]
-                              ]))
-    matriz_braba_inv = np.linalg.inv(matriz_braba)
-    for p in parab:
-        projected_point = np.matmul(matriz_braba_inv, np.array([p[1], p[0]]))
-        projected_parab.append((int(projected_point[1]), int(projected_point[0])))
-    
-    parab = projected_parab'''
-
-
-
-    #for p in parab:
-    #    draw_square_at(p, [255, 0, 255])
-
-
-    '''for i in range(minparab, maxparab):
-        res = parab_x(i, sol)
-        res_screen = np.matmul(matriz_braba, np.array([res, i]))
-        if res_screen[1] < 0:
-            continue
-        draw_square_at(res_screen, [0, 255, 0])'''
 
     # exibimos a imagem por último para não receber cliques antes de tudo devidamente calculado
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)
@@ -178,11 +201,22 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    nvotes = 550
+    threshold = 120
+    main(threshold, nvotes)
     # ficamos em laço esperando o usuário ou fechar a janela ou clicar na imagem (botão esquerdo) para adicionar um jogador
     while 1:
         k = cv2.waitKey(0)
 
-        saida = cv2.destroyAllWindows()
-        if (saida == None):
+        print(k)
+        #saida = cv2.destroyAllWindows()
+        if k == 27:
+            cv2.destroyAllWindows()
             break
+        elif k == 110:
+            nvotes = int(input('Insert new nvotes value:'))
+            main(threshold, nvotes)
+        elif k == 116:
+            threshold = int(input('Insert new threshold value:'))
+            main(threshold, nvotes)
+
