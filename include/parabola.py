@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from math import floor
 
 
 def draw_square_at(img, pos, color):
@@ -17,9 +18,9 @@ class Parabola:
         self.center = ((self.minx + self.maxx) / 2, (self.miny + self.maxy) / 2)
 
         self.rotate(angle)
-        self.thin()
-        #self.equation = self.ransac()
-        self.equation = self.stipulate_equation(self.points)
+        #self.thin()
+        self.equation = self.ransac()
+        #self.equation = self.stipulate_equation(self.points)
         self.points = self.stipulate_parabola()
         self.rotate(-angle)
 
@@ -42,10 +43,34 @@ class Parabola:
         return stip_parab
 
     def ransac(self):
-        maybe_ins = random.choices(self.points, k=3)
-        maybe_parab = self.stipulate_equation(maybe_ins)
+        best_fit = None
+        best_error = np.inf
 
-        return maybe_parab
+        for indice in range(100):
+            maybe_ins = random.choices(self.points, k=3)
+            equa = self.equation = self.stipulate_equation(maybe_ins)
+            while equa is 'Singular':
+                maybe_ins = random.choices(self.points, k=3)
+                equa = self.equation = self.stipulate_equation(maybe_ins)
+
+            ins = []
+            for p in self.points:
+                y = self.f_x(p[0])
+                if np.abs(y - p[1]) < 10:
+                    ins.append(p)
+
+            if len(ins) >= len(self.points)*0.2:
+                better_model = self.equation = self.stipulate_equation(ins)
+                err = 0
+                for p in self.points:
+                    y = self.f_x(p[0])
+                    err += np.abs(y - p[1])
+                if err < best_error:
+                    best_error = err
+                    best_fit = better_model
+                    print(len(self.points), len(ins), err)
+
+        return best_fit
 
     def stipulate_equation(self, points):
         a_size = (len(points), 3)
@@ -65,22 +90,25 @@ class Parabola:
         ata = np.matmul(np.transpose(a_matrix), a_matrix)
         atb = np.matmul(np.transpose(a_matrix), b_matrix)
 
-        return np.linalg.solve(ata, atb)
+        try:
+            return np.linalg.solve(ata, atb)
+        except np.linalg.LinAlgError:
+            return 'Singular'
 
     def thin(self):
         thin_parab = []
-        prev_x = self.points[0][1]
+        prev_x = self.points[0][0]
         pysum = 0
         pycount = 0
         for p in self.points:
-            if p[1] == prev_x:
-                pysum += p[0]
+            if p[0] == prev_x:
+                pysum += p[1]
                 pycount += 1
             else:
                 pymean = pysum // pycount
-                thin_parab.append((pymean, prev_x))
-                prev_x = p[1]
-                pysum = p[0]
+                thin_parab.append((prev_x, pymean))
+                prev_x = p[0]
+                pysum = p[1]
                 pycount = 1
 
         self.points = thin_parab
@@ -107,6 +135,6 @@ class Parabola:
 
         shifted_parab = []
         for p in self.points:
-            shiftp = (p[0] + self.center[0], p[1] + self.center[1])
+            shiftp = (floor(p[0] + self.center[0]), floor(p[1] + self.center[1]))
             shifted_parab.append(shiftp)
         self.points = shifted_parab

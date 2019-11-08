@@ -25,48 +25,38 @@ def kmeans(img):
     prev_c1 = prev_c2 = -7
     g1 = []
     g2 = []
-    g3 = []
-    c3 = 150
     while c1 != prev_c1 and c2 != prev_c2:
         g1 = []
         sum1 = 0
         count1 = 0
         g2 = []
-        g3 = []
         sum2 = 0
         count2 = 0
-        sum3 = 0
-        count3 = 0
 
         for i in range(img.shape[0]):
             for j in range(img.shape[1]):
                 val = img[i, j]
-                dists = [color_dist(val, c) for c in [c1, c2, c3]]
-                if dists[0] < dists[1] and dists[0] < dists[2]:
+                dists = [color_dist(val, c) for c in [c1, c2]]
+                if dists[0] < dists[1]:
                     g1.append((i, j))
                     sum1 += val
                     count1 += 1
-                elif dists[1] < dists[0] and dists[1] < dists[2]:
+                else:
                     g2.append((i, j))
                     sum2 += val
                     count2 += 1
-                else:
-                    g3.append((i, j))
-                    sum3 += val
-                    count3 += 1
 
         prev_c1 = c1
         prev_c2 = c2
         c1 = sum1 / count1
         c2 = sum2 / count2
-        c3 = sum3 / count3
 
         print(c1, c2)
 
     if c1 < c2:
-        return g1, g2, g3
+        return g1, g2
     else:
-        return g2, g1, g3
+        return g2, g1
 
 
 def intersec(p1, p2, p3, p4):
@@ -107,20 +97,7 @@ def main(threshold, nvotes):
 
     #converte imagem bgr pra grey scale
     grey_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    grey_imgk = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    b, p, r = kmeans(grey_img)
-
-    for p in p:
-        grey_imgk[p] = 0
-    for p in r:
-        grey_imgk[p] = 0
-    for p in b:
-        grey_imgk[p] = 255
-
-    cv2.namedWindow('k means', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('k means', size[0], size[1])
-    cv2.imshow('k means', grey_imgk)
 
     '''hist = [0 for i in range(255)]
     avg = 0
@@ -131,21 +108,30 @@ def main(threshold, nvotes):
     
     avg /= size[0]*size[1]'''
 
-    for i in range(size[0]):
+    '''for i in range(size[0]):
         for j in range(size[1]):
             if grey_img[j, i] < threshold:
                 grey_img[j, i] = 255
             else:
-                grey_img[j, i] = 0
+                grey_img[j, i] = 0'''
 
 
     cv2.namedWindow('thresholding', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('thresholding', size[0], size[1])
     cv2.imshow('thresholding', grey_img)
 
-    lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
+    b, p = kmeans(grey_img)
 
-    return
+    for p in p:
+        grey_img[p] = 0
+    for p in b:
+        grey_img[p] = 255
+
+    cv2.namedWindow('k means', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('k means', size[0], size[1])
+    cv2.imshow('k means', grey_img)
+
+    lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
 
     for line in lines:
         x1, x2 = find_endpoints(line[0])
@@ -176,14 +162,24 @@ def main(threshold, nvotes):
 
     cv2.line(img, x1, x2, (0, 0, 255), 3)
     cv2.line(img, new_x3, new_x4, (255, 0, 255), 3)
-    cv2.line(grey_img, x1, x2, (0, 0, 0), 50)
-    cv2.line(grey_img, x3, x4, (0, 0, 0), 50)
+    cv2.line(grey_img, x1, x2, 150, 50)
+    cv2.line(grey_img, x3, x4, 150, 50)
 
     draw_square_at(img, inter, [255, 0, 0])
 
+    cv2.namedWindow('hough', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('hough', size[0], size[1])
+    cv2.imshow('hough', img)
+
+    cv2.namedWindow('houghg', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('houghg', size[0], size[1])
+    cv2.imshow('houghg', grey_img)
+
+    #return
+
     # tentar fazer uma erosão
     kernel = np.ones(ekernel_size, np.uint8)
-    grey_img = cv2.erode(grey_img, kernel, iterations=1)
+    #grey_img = cv2.erode(grey_img, kernel, iterations=1)
 
     points = [np.array((i, j)) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
     parab = Parabola(points, theta_diff)
