@@ -9,7 +9,7 @@
 import cv2   # biblioteca opencv utilizada para funções de imagem
 import numpy as np  # biblioteca numpy para funções matemáticas, como a SDV
 from include.parabola import Parabola
-import random
+import sys
 
 
 def draw_square_at(img, pos, color):
@@ -88,9 +88,9 @@ def find_endpoints(t):
     return (x1, y1), (x2, y2)
 
 
-def main(threshold, nvotes):
+def main(nvotes, name, debug):
     # carregamos a imagem, dimensionamos uma janela para exibí-la
-    img = cv2.imread('exemplo1 - Copy.jpg')
+    img = cv2.imread(name)
     size = (img.shape[1], img.shape[0])
 
     ekernel_size = (3, 3)
@@ -113,12 +113,12 @@ def main(threshold, nvotes):
             if grey_img[j, i] < threshold:
                 grey_img[j, i] = 255
             else:
-                grey_img[j, i] = 0'''
+                grey_img[j, i] = 0
 
-
-    cv2.namedWindow('thresholding', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('thresholding', size[0], size[1])
-    cv2.imshow('thresholding', grey_img)
+    if debug:
+        cv2.namedWindow('thresholding', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('thresholding', size[0], size[1])
+        cv2.imshow('thresholding', grey_img)'''
 
     b, p = kmeans(grey_img)
 
@@ -127,24 +127,38 @@ def main(threshold, nvotes):
     for p in b:
         grey_img[p] = 255
 
-    cv2.namedWindow('k means', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('k means', size[0], size[1])
-    cv2.imshow('k means', grey_img)
+    kernel = np.ones(ekernel_size, np.uint8)
+    grey_img = cv2.dilate(grey_img, kernel, iterations=1)
+
+    if debug:
+        cv2.namedWindow('k means', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('k means', size[0], size[1])
+        cv2.imshow('k means', grey_img)
 
     lines = cv2.HoughLines(grey_img, 1, np.pi/180, nvotes)
 
+    if debug:
+        for line in lines:
+            x1, x2 = find_endpoints(line[0])
+            cv2.line(img, x1, x2, (0, 255, 255), 3)
+
+    lines = sorted(lines, key=lambda t: t[0][1], reverse=True)
+
+    x1, x2 = find_endpoints(lines[0][0])
+    t1 = lines[0][0][1]
+    best_dif = np.inf
+    best_t2 = lines[0][0][1]
+    #while not(80 <= np.abs(np.degrees(t1) - np.degrees(t2)) <= 100):
     for line in lines:
-        x1, x2 = find_endpoints(line[0])
-        cv2.line(img, x1, x2, (0, 255, 255), 3)
+        t2 = line[0][1]
+        diff = np.abs(np.degrees(t1) - np.degrees(t2))
+        if 80 <= diff <= 100:
+            if np.abs(diff - 90) <= best_dif:
+                best_dif = diff
+                best_t2 = t2
+                x3, x4 = find_endpoints(line[0])
 
-    lines = sorted(lines, key=lambda t: t[0][1])
-
-    x1, x2 = find_endpoints(lines[-1][0])
-    x3, x4 = find_endpoints(lines[0][0])
-
-    t1 = lines[-1][0][1]
-    t2 = lines[0][0][1]
-
+    t2 = best_t2
     theta_diff = np.abs(t2 - np.pi/2)
 
     sub = np.subtract(x2, x1)
@@ -162,24 +176,23 @@ def main(threshold, nvotes):
 
     cv2.line(img, x1, x2, (0, 0, 255), 3)
     cv2.line(img, new_x3, new_x4, (255, 0, 255), 3)
-    cv2.line(grey_img, x1, x2, 150, 50)
-    cv2.line(grey_img, x3, x4, 150, 50)
+    if debug:
+        cv2.line(img, x3, x4, (255, 0, 0), 3)
+    cv2.line(grey_img, x1, x2, 0, 50)
+    cv2.line(grey_img, x3, x4, 0, 50)
 
     draw_square_at(img, inter, [255, 0, 0])
 
-    cv2.namedWindow('hough', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('hough', size[0], size[1])
-    cv2.imshow('hough', img)
+    if debug:
+        cv2.namedWindow('hough', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('hough', size[0], size[1])
+        cv2.imshow('hough', img)
 
-    cv2.namedWindow('houghg', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('houghg', size[0], size[1])
-    cv2.imshow('houghg', grey_img)
+        cv2.namedWindow('houghg', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('houghg', size[0], size[1])
+        cv2.imshow('houghg', grey_img)
 
     #return
-
-    # tentar fazer uma erosão
-    kernel = np.ones(ekernel_size, np.uint8)
-    #grey_img = cv2.erode(grey_img, kernel, iterations=1)
 
     points = [np.array((i, j)) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
     parab = Parabola(points, theta_diff)
@@ -191,28 +204,21 @@ def main(threshold, nvotes):
     cv2.resizeWindow('image', size[0], size[1])
     cv2.imshow('image', img)
 
-    cv2.namedWindow('grey image', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('grey image', size[0], size[1])
-    cv2.imshow('grey image', grey_img)
+    if debug:
+        cv2.namedWindow('grey image', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('grey image', size[0], size[1])
+        cv2.imshow('grey image', grey_img)
 
 
 if __name__ == '__main__':
-    nvotes = 550
-    threshold = 120
-    main(threshold, nvotes)
+    nvotes = 500
+    main(nvotes, sys.argv[1], int(sys.argv[2]))
     # ficamos em laço esperando o usuário ou fechar a janela ou clicar na imagem (botão esquerdo) para adicionar um jogador
     while 1:
         k = cv2.waitKey(0)
 
-        print(k)
-        #saida = cv2.destroyAllWindows()
-        if k == 27:
-            cv2.destroyAllWindows()
+        saida = cv2.destroyAllWindows()
+        if (saida == None):
             break
-        elif k == 110:
-            nvotes = int(input('Insert new nvotes value:'))
-            main(threshold, nvotes)
-        elif k == 116:
-            threshold = int(input('Insert new threshold value:'))
-            main(threshold, nvotes)
+
 
