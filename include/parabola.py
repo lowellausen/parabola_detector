@@ -48,6 +48,7 @@ class Parabola:
         return stip_parab
 
     def ransac(self):
+        print('Começando ransac!')
         best_fit = None
         best_error = np.inf
 
@@ -73,7 +74,7 @@ class Parabola:
                 if err < best_error:
                     best_error = err
                     best_fit = better_model
-                    print(len(self.points), len(ins), err)
+                    print('Novo melhor erro: ', err)
 
         return best_fit
 

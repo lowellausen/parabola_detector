@@ -21,6 +21,7 @@ def color_dist(v1, v2):
 
 
 def kmeans(img):
+    print('Começando K-means')
     c1, c2 = 0, 255
     prev_c1 = prev_c2 = -7
     g1 = []
@@ -46,12 +47,11 @@ def kmeans(img):
                     sum2 += val
                     count2 += 1
 
+        print('Centroide 1: ', c1, 'Centroide 2: ', c2)
         prev_c1 = c1
         prev_c2 = c2
         c1 = sum1 / count1
         c2 = sum2 / count2
-
-        print(c1, c2)
 
     if c1 < c2:
         return g1, g2
@@ -74,7 +74,6 @@ def intersec(p1, p2, p3, p4):
 def find_endpoints(t):
     rho = t[0]
     theta = t[1]
-    print(np.degrees(theta), theta)
     a = np.cos(theta)
     b = np.sin(theta)
     x0 = a * rho
@@ -90,6 +89,7 @@ def find_endpoints(t):
 
 def main(nvotes, name, debug):
     # carregamos a imagem, dimensionamos uma janela para exibí-la
+    print('Abrindo imagem ', name)
     img = cv2.imread(name)
     size = (img.shape[1], img.shape[0])
 
@@ -160,6 +160,8 @@ def main(nvotes, name, debug):
 
     t2 = best_t2
     theta_diff = np.abs(t2 - np.pi/2)
+
+    print("Ânhulo theta do eixo 1: ", t1, 'Ângulo theta do eixo 2: ', t2)
 
     sub = np.subtract(x2, x1)
 
