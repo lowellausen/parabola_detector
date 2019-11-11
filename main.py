@@ -195,7 +195,7 @@ def main(nvotes, name, debug):
     #return
 
     points = [np.array((i, j)) for i in range(size[0]) for j in range(size[1]) if grey_img[j, i] == 255]
-    parab = Parabola(points, theta_diff)
+    parab = Parabola(points, theta_diff, img.shape)
 
     parab.draw(img)
 
@@ -212,7 +212,12 @@ def main(nvotes, name, debug):
 
 if __name__ == '__main__':
     nvotes = 500
-    main(nvotes, sys.argv[1], int(sys.argv[2]))
+    try:
+        if sys.argv[2] == 'debug':
+            debug = True
+    except IndexError:
+        debug = False
+    main(nvotes, sys.argv[1], debug)
     # ficamos em laço esperando o usuário ou fechar a janela ou clicar na imagem (botão esquerdo) para adicionar um jogador
     while 1:
         k = cv2.waitKey(0)

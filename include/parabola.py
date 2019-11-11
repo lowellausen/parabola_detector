@@ -4,12 +4,17 @@ from math import floor
 
 
 def draw_square_at(img, pos, color):
+    y = pos[1]
+    if 0 > y or y >= img.shape[0]:
+        return
     img[int(pos[1]) - 3:int(pos[1]) + 3, int(pos[0]) - 3:int(pos[0]) + 3] = color
 
 
 class Parabola:
-    def __init__(self, points, angle):
+    def __init__(self, points, angle, imgsize):
         self.points = points
+
+        self.imgsize = imgsize
 
         self.miny = min(points, key=lambda t: t[1])[1]
         self.maxy = max(points, key=lambda t: t[1])[1]
@@ -34,9 +39,9 @@ class Parabola:
 
     def stipulate_parabola(self):
         stip_parab = []
-        for x in range(self.minx, self.maxx):
+        for x in range(0 , self.imgsize[1]):
             y = self.f_x(x)
-            if y < 0:
+            if 0 > y or y >= self.imgsize[0]:
                 continue
             stip_parab.append((x, y))
 
