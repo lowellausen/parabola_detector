@@ -1,8 +1,3 @@
-# telecurso2000
-Second assignment for Fundamentals of Computer Vision class
+# vision2
 
-Vamos pensar um pouco
-
-confio no pontecial do grupo pra definir isso.
-
-![alt text](https://i.ytimg.com/vi/ni7OR-3kWY8/hqdefault.jpg)
+Second assignment for the Computer Vision course at UFRGS/INF. 2019/2
